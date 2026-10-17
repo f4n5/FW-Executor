@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>FW Executor — Shiv</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#07070b;
+  --panel:#121218;
+  --panel2:#181822;
+  --line:#2a2a36;
+  --text:#ececf1;
+  --muted:#9a9aaa;
+  --blue:#3b6cff;
+  --blue-soft:#8aa4ff;
+  --green:#3dd68c;
+  --yellow:#f5c542;
+  --red:#ff5c6c;
+  --track:#2c2c38;
+  --accent:#4f8cff;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:Outfit,system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  background-image:
+    radial-gradient(900px 420px at 80% -10%,rgba(59,108,255,.22),transparent 60%),
+    radial-gradient(700px 400px at 10% 100%,rgba(61,214,140,.06),transparent 50%),
+    linear-gradient(#07070b,#0b0b12);
+  min-height:100vh;
+}
+a{color:inherit;text-decoration:none}
+header,main,footer{max-width:1180px;margin:0 auto;padding:24px}
+header{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+  position:sticky;top:0;z-index:50;
+  background:rgba(7,7,11,.82);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  padding-top:16px;padding-bottom:16px;
+}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{
+  width:38px;height:38px;border-radius:10px;background:var(--blue);
+  display:grid;place-items:center;font-weight:700;font-size:14px;letter-spacing:.02em;
+  box-shadow:0 0 24px rgba(59,108,255,.35);
+}
+.sub{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+nav a{
+  margin-left:2px;color:#c8c8d2;font-size:13px;
+  padding:6px 12px;border-radius:999px;border:1px solid transparent;
+  transition:border-color .15s,background .15s,color .15s;
+}
+nav a:hover,nav a.active{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#fff}
+.pill{
+  border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 12px;
+  font-size:12px;color:var(--muted);
+}
+.pill.live{border-color:rgba(61,214,140,.4);color:var(--green);background:rgba(61,214,140,.08)}
+
+h1{font-size:clamp(40px,6.5vw,72px);line-height:.95;margin:12px 0;letter-spacing:-.03em}
+.blue{color:var(--blue-soft)}
+.kicker{font-family:"IBM Plex Mono",monospace;letter-spacing:.2em;text-transform:uppercase;font-size:12px;color:var(--blue-soft)}
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;align-items:center;margin-top:20px}
+@media(max-width:900px){.hero{grid-template-columns:1fr}}
+
+.card,.box{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;
+}
+.card{padding:18px}
+.btn{
+  background:var(--blue);color:#fff;border:0;border-radius:999px;
+  padding:10px 18px;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:8px;
+  transition:filter .15s,transform .1s;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.ghost{background:transparent;border:1px solid rgba(255,255,255,.15);color:#d6d6e0}
+.ghost:hover{background:rgba(255,255,255,.04)}
+.danger{background:#3a1a22;border:1px solid #6a2a36;color:#ffb0ba}
+
+section{margin-top:56px}
+h2{margin:0 0 16px;font-size:24px;letter-spacing:-.02em}
+h3{margin:0 0 8px;font-size:16px}
+.muted{color:var(--muted);font-size:14px;line-height:1.55}
+.lead{font-size:17px;color:#c8c8d4;line-height:1.55;max-width:52ch}
+
+/* mock UI window */
+.mock{
+  background:linear-gradient(180deg,#121218,#16161e);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.03);
+}
+.mock-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);
+  background:#101016;
+}
+.mock-bar .title{color:#e0e0ea;font-weight:600;letter-spacing:.02em}
+.mock-body{display:grid;grid-template-columns:150px 1fr;min-height:280px}
+@media(max-width:600px){.mock-body{grid-template-columns:1fr}}
+.mock-nav{
+  border-right:1px solid var(--line);padding:12px 10px;background:#0e0e14;
+  display:flex;flex-direction:column;gap:4px;
+}
+.mock-nav button{
+  text-align:left;background:transparent;border:0;color:var(--muted);
+  font:inherit;font-size:13px;padding:8px 10px;border-radius:8px;cursor:pointer;
+  transition:background .12s,color .12s;
+}
+.mock-nav button:hover,.mock-nav button.active{background:rgba(59,108,255,.14);color:#fff}
+.mock-main{padding:14px;display:flex;flex-direction:column;gap:10px}
+.mock-editor{
+  flex:1;background:#0a0a10;border:1px solid var(--line);border-radius:10px;
+  padding:12px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:#b8c4e0;
+  min-height:120px;line-height:1.5;white-space:pre-wrap;
+}
+.mock-actions{display:flex;flex-wrap:wrap;gap:6px}
+.mock-actions .btn{padding:7px 12px;font-size:12px;border-radius:8px}
+.status-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{
+  font-size:11px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);
+  color:var(--muted);background:rgba(255,255,255,.03);
+}
+.chip.ok{border-color:rgba(61,214,140,.35);color:var(--green);background:rgba(61,214,140,.08)}
+.chip.warn{border-color:rgba(245,197,66,.35);color:var(--yellow);background:rgba(245,197,66,.08)}
+
+/* feature grid */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:900px){.feat-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.feat-grid{grid-template-columns:1fr}}
+.feat{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;
+  transition:border-color .15s,transform .15s;
+  cursor:default;
+}
+.feat:hover{border-color:rgba(59,108,255,.4);transform:translateY(-1px)}
+.feat .icon{
+  width:32px;height:32px;border-radius:8px;background:rgba(59,108,255,.12);
+  display:grid;place-items:center;margin-bottom:10px;font-size:14px;color:var(--blue-soft);
+  font-family:"IBM Plex Mono",monospace;font-weight:600;
+}
+.feat h3{margin:0 0 6px;font-size:15px}
+.feat p{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
+
+/* UNC tabs */
+.unc-wrap{display:grid;grid-template-columns:200px 1fr;gap:14px}
+@media(max-width:700px){.unc-wrap{grid-template-columns:1fr}}
+.unc-tabs{display:flex;flex-direction:column;gap:4px}
+.unc-tabs button{
+  text-align:left;background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  font:inherit;font-size:13px;padding:10px 12px;border-radius:10px;cursor:pointer;
+  transition:border-color .12s,color .12s,background .12s;
+}
+.unc-tabs button:hover,.unc-tabs button.active{
+  border-color:rgba(59,108,255,.45);color:#fff;background:rgba(59,108,255,.1);
+}
+.unc-panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:220px;
+}
+.unc-panel h3{margin:0 0 4px}
+.unc-list{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;margin-top:12px;
+}
+.unc-list code{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--blue-soft);
+  background:rgba(59,108,255,.08);border:1px solid rgba(59,108,255,.15);
+  padding:5px 8px;border-radius:6px;display:block;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* pricing */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:800px){.price-grid{grid-template-columns:1fr}}
+.price{
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 20px;
+  display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;
+  transition:border-color .15s,transform .15s;
+}
+.price:hover{transform:translateY(-2px)}
+.price.featured{
+  border-color:rgba(59,108,255,.55);
+  box-shadow:0 0 0 1px rgba(59,108,255,.2),0 20px 50px rgba(59,108,255,.12);
+}
+.price .badge{
+  position:absolute;top:14px;right:14px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--blue);color:#fff;padding:4px 8px;border-radius:999px;font-weight:600;
+}
+.price .name{font-size:14px;color:var(--muted);font-family:"IBM Plex Mono",monospace;letter-spacing:.06em;text-transform:uppercase}
+.price .amount{font-size:36px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.price .amount span{font-size:15px;font-weight:500;color:var(--muted)}
+.price ul{list-style:none;margin:0;padding:0;display:grid;gap:8px;flex:1}
+.price li{font-size:13.5px;color:#c8c8d4;display:flex;gap:8px;align-items:flex-start}
+.price li::before{content:"✓";color:var(--green);font-weight:700;flex-shrink:0}
+.price .btn{width:100%;justify-content:center;margin-top:4px}
+
+/* FAQ */
+.faq{display:grid;gap:8px}
+.faq details{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0;
+  overflow:hidden;transition:border-color .15s;
+}
+.faq details[open]{border-color:rgba(59,108,255,.35)}
+.faq summary{
+  padding:14px 16px;cursor:pointer;font-weight:500;font-size:14.5px;
+  list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  user-select:none;
+}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{
+  content:"+";font-family:"IBM Plex Mono",monospace;color:var(--muted);font-size:18px;line-height:1;
+  transition:transform .15s;
+}
+.faq details[open] summary::after{content:"−"}
+.faq .ans{padding:0 16px 16px;color:var(--muted);font-size:14px;line-height:1.55}
+
+/* flow steps */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:800px){.flow{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.flow{grid-template-columns:1fr}}
+.step{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;
+}
+.step .n{
+  width:28px;height:28px;border-radius:50%;background:rgba(59,108,255,.15);
+  border:1px solid rgba(59,108,255,.3);color:var(--blue-soft);
+  display:grid;place-items:center;font-size:12px;font-weight:700;margin-bottom:10px;
+  font-family:"IBM Plex Mono",monospace;
+}
+.step strong{display:block;font-size:14px;margin-bottom:4px}
+.step span{font-size:12.5px;color:var(--muted);line-height:1.4}
+
+footer{
+  margin-top:60px;padding-top:20px;border-top:1px solid var(--line);
+  color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:13px;
+}
+
+/* theme switcher demo */
+.theme-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.theme-swatch{
+  width:36px;height:36px;border-radius:10px;border:2px solid transparent;cursor:pointer;
+  transition:border-color .12s,transform .12s;
+}
+.theme-swatch:hover,.theme-swatch.active{border-color:#fff;transform:scale(1.06)}
+.t-dark{background:#121214}
+.t-midnight{background:#0a0e1a}
+.t-ocean{background:#0a1520}
+.t-crimson{background:#1a0c10}
+.t-forest{background:#0c1410}
+
+.cta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">FW</div>
+    <div>
+      <div style="font-weight:600;font-size:15px">FW Executor</div>
+      <div class="sub">Shiv · personal · Windows</div>
+    </div>
+  </div>
+  <nav>
+    <a href="#features">Features</a>
+    <a href="#unc">UNC</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+    <span class="pill live">● Live</span>
+  </nav>
+</header>
+
+<main>
+  <!-- HERO -->
+  <div class="kicker">Madium-class · 100% UNC + sUNC</div>
+  <div class="hero">
+    <div>
+      <h1>FW<br><span class="blue">Executor</span></h1>
+      <p class="lead">
+        Clean dual-panel UI. Manual-map inject. Full UNC / sUNC surface.
+        Auto offsets. Strategy A ScriptContext arm. Built for people who actually ship scripts.
+      </p>
+      <div class="cta-row">
+        <a class="btn" href="#pricing">Get access</a>
+        <a class="btn ghost" href="#features">See features</a>
+      </div>
+      <div class="status-row" style="margin-top:18px">
+        <span class="chip ok">Auto offsets</span>
+        <span class="chip ok">Manual map</span>
+        <span class="chip ok">Pipe bridge</span>
+        <span class="chip warn">Hyperion-aware</span>
+      </div>
+    </div>
+
+    <!-- Interactive mock UI -->
+    <div class="mock" id="mock">
+      <div class="mock-bar">
+        <span class="title">FW</span>
+        <span id="mockStatus">Idle</span>
+      </div>
+      <div class="mock-body">
+        <div class="mock-nav" id="mockNav">
+          <button class="active" data-tab="home">Home</button>
+          <button data-tab="editor">Editor</button>
+          <button data-tab="files">Files</button>
+          <button data-tab="settings">Settings</button>
+        </div>
+        <div class="mock-main" id="mockMain">
+          <!-- filled by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section>
+    <h2>How it works</h2>
+    <p class="muted" style="margin:-6px 0 16px;max-width:60ch">Four steps. No launcher bloat. No forced accounts for local use.</p>
+    <div class="flow">
+      <div class="step">
+        <div class="n">01</div>
+        <strong>Launch Roblox</strong>
+        <span>Join any game. Leave the client running.</span>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <strong>Open FW</strong>
+        <span>Run ShivExecutor.exe. Window title / class: FW.</span>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <strong>Attach → Inject</strong>
+        <span>Manual-map path first. LoadLibrary fallback. Pipe connects.</span>
+      </div>
+      <div class="step">
+        <div class="n">04</div>
+        <strong>Run</strong>
+        <span>Editor → paste / hub → Run F5 (Execute + full UNC).</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <h2>Features</h2>
+    <p class="muted" style="margin:-6px 0 16px;max-width:60ch">Everything expected from a modern personal executor — without the neon noise.</p>
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="icon">UI</div>
+        <h3>Madium-class UI</h3>
+        <p>Home · Editor · Files · Settings. Dual-panel, dark, soft blue accent. Themes: Dark, Midnight, Ocean, Crimson, Forest.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">INJ</div>
+        <h3>Manual-map inject</h3>
+        <p>Primary path: map image, fix relocs/imports, PEB unlink, zero headers. LoadLibrary fallback. Lowest common footprint.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">A</div>
+        <h3>Strategy A arm</h3>
+        <p>DataModel → ScriptContext → live lua_State. Persistent child thread. Identity 8. Full environment for hubs and sUNC.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">B</div>
+        <h3>Strategy B fallback</h3>
+        <p>Embedded Luau compiler + VM inside the DLL. Isolated state when ScriptContext arm is blocked. Compatibility path.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">OFS</div>
+        <h3>Auto offsets</h3>
+        <p>Boot + Settings → Refresh. Sources: rbxoffsets.com then GitHub mirror. Version-pinned, no manual hunting.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">UNC</div>
+        <h3>100% UNC + sUNC</h3>
+        <p>All common groups enabled by default. Soft stubs ship so hubs resolve; native impls replace them once Strategy A is armed.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">ED</div>
+        <h3>Multi-tab editor</h3>
+        <p>Syntax-friendly editor, open/save, Run F5 (Execute + UNC bootstrap), raw Execute, clear log, output console.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">HUB</div>
+        <h3>Script hub</h3>
+        <p>Local scripts + optional hub search. Run All. Workspace under %APPDATA%\ShivExecutor\workspace.</p>
+      </div>
+      <div class="feat">
+        <div class="icon">ID</div>
+        <h3>Identity control</h3>
+        <p>setthreadidentity / getidentity. Default level 8. identifyexecutor → "FW". getgenv().FW = true. Hui folder: FWHui.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- UNC -->
+  <section id="unc">
+    <h2>UNC / sUNC surface</h2>
+    <p class="muted" style="margin:-6px 0 16px;max-width:60ch">Click a group. Full catalog ships enabled by default. sUNC scores behaviour, not name-only stubs.</p>
+    <div class="unc-wrap">
+      <div class="unc-tabs" id="uncTabs"></div>
+      <div class="unc-panel" id="uncPanel"></div>
+    </div>
+  </section>
+
+  <!-- THEMES -->
+  <section>
+    <h2>Themes</h2>
+    <p class="muted" style="margin:-6px 0 8px">Flat dark. High contrast text. No neon spam.</p>
+    <div class="theme-row" id="themeRow">
+      <div class="theme-swatch t-dark active" data-theme="dark" title="Dark"></div>
+      <div class="theme-swatch t-midnight" data-theme="midnight" title="Midnight"></div>
+      <div class="theme-swatch t-ocean" data-theme="ocean" title="Ocean"></div>
+      <div class="theme-swatch t-crimson" data-theme="crimson" title="Crimson"></div>
+      <div class="theme-swatch t-forest" data-theme="forest" title="Forest"></div>
+    </div>
+    <p class="muted" style="margin-top:10px;font-size:13px" id="themeLabel">Active: Dark</p>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <h2>Pricing</h2>
+    <p class="muted" style="margin:-6px 0 16px;max-width:60ch">Paid product. No free tier abuse. License keys, not shared cracks.</p>
+    <div class="price-grid">
+      <div class="price">
+        <div class="name">Day</div>
+        <div class="amount">$3 <span>/ 24h</span></div>
+        <ul>
+          <li>Full UNC + sUNC</li>
+          <li>Auto offsets</li>
+          <li>Manual-map inject</li>
+          <li>Editor + hub</li>
+          <li>Single key, HWID lock</li>
+        </ul>
+        <button class="btn ghost" data-plan="day">Get Day</button>
+      </div>
+      <div class="price featured">
+        <div class="badge">Popular</div>
+        <div class="name">Week</div>
+        <div class="amount">$12 <span>/ 7d</span></div>
+        <ul>
+          <li>Everything in Day</li>
+          <li>Priority offset refresh</li>
+          <li>Strategy A + B</li>
+          <li>Theme pack</li>
+          <li>Discord support channel</li>
+        </ul>
+        <button class="btn" data-plan="week">Get Week</button>
+      </div>
+      <div class="price">
+        <div class="name">Month</div>
+        <div class="amount">$30 <span>/ 30d</span></div>
+        <ul>
+          <li>Everything in Week</li>
+          <li>Best value</li>
+          <li>Early feature builds</li>
+          <li>Key reset (1× / month)</li>
+          <li>Direct support priority</li>
+        </ul>
+        <button class="btn ghost" data-plan="month">Get Month</button>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:14px;font-size:13px">
+      Payments via your preferred provider (Crypto / card). Keys delivered instantly after confirmation.
+      HWID locked. Reset policy per plan. No refunds after key activation.
+    </p>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <h2>FAQ</h2>
+    <div class="faq" id="faqList">
+      <details>
+        <summary>What is FW Executor?</summary>
+        <div class="ans">Personal Windows Roblox executor. Madium-class clean UI, 100% UNC + sUNC surface, auto offsets, manual-map inject. Branding: FW. identifyexecutor returns "FW".</div>
+      </details>
+      <details>
+        <summary>Is it undetected?</summary>
+        <div class="ans">No executor is permanently undetected. Hyperion changes weekly. FW uses manual-map + PEB unlink + header wipe as the primary path and refreshes offsets every version. Architecture + update speed is the product — not marketing slogans.</div>
+      </details>
+      <details>
+        <summary>What does Strategy A / B mean?</summary>
+        <div class="ans">Strategy A is the primary path: resolve DataModel → ScriptContext → live lua_State, create a persistent child thread, set identity 8, load + pcall. This is what Wave / Madium class tools use for full environment. Strategy B embeds a Luau compiler + VM inside the DLL as a fallback when ScriptContext arm fails.</div>
+      </details>
+      <details>
+        <summary>How do offsets work?</summary>
+        <div class="ans">On boot and from Settings → Refresh. Sources: rbxoffsets.com first, then a GitHub mirror. Version-pinned. You don't hand-edit offsets.hpp for normal use.</div>
+      </details>
+      <details>
+        <summary>Does it support sUNC / ScriptBlox hubs?</summary>
+        <div class="ans">Yes. Full UNC + sUNC catalog ships with all groups enabled by default (env, identity, closures, metatable, FS, HTTP, encoding, crypt, drawing, instances, scripts, cache, input, debug, signals, websocket, actors, misc). Soft stubs keep hubs alive until Strategy A arms native implementations.</div>
+      </details>
+      <details>
+        <summary>What OS / build is required?</summary>
+        <div class="ans">Windows x64. Built with VS2022 (v143). Output: ShivExecutor.exe + ShivExec.dll (keep together). Links d3d11, dxgi, winhttp.</div>
+      </details>
+      <details>
+        <summary>Can I use it on multiple PCs?</summary>
+        <div class="ans">Keys are HWID locked. Day / Week: one machine. Month includes one key reset per billing window. Contact support for hardware changes outside policy.</div>
+      </details>
+      <details>
+        <summary>Where are my scripts saved?</summary>
+        <div class="ans">Workspace folder: %APPDATA%\ShivExecutor\workspace. Local scripts and hub downloads live there.</div>
+      </details>
+      <details>
+        <summary>Refunds?</summary>
+        <div class="ans">No refunds after key activation. Test the Day plan first if you're unsure. Keys that never activated can be reviewed case-by-case within 24h of purchase.</div>
+      </details>
+      <details>
+        <summary>How do I get support?</summary>
+        <div class="ans">Discord support channel for Week / Month. Direct priority for Month. Include your key prefix, Roblox version, and what failed (attach / inject / execute).</div>
+      </details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>FW Executor · Shiv</span>
+  <span>Windows · x64 · personal use</span>
+</footer>
+
+<script>
+/* ── Mock UI tabs ── */
+const mockPages = {
+  home: `
+    <div style="display:grid;gap:10px">
+      <div style="font-size:13px;color:var(--muted)">Status</div>
+      <div class="status-row">
+        <span class="chip" id="chipAttach">Idle</span>
+        <span class="chip" id="chipBridge">Bridge down</span>
+        <span class="chip ok">UNC 18 groups</span>
+      </div>
+      <div class="mock-actions" style="margin-top:8px">
+        <button class="btn" id="btnAttach">Attach</button>
+        <button class="btn ghost" id="btnInject" disabled>Inject</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px" id="homeLog">Waiting for Roblox…</div>
+    </div>`,
+  editor: `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px">untitled.lua</div>
+    <div class="mock-editor" id="editorBox">-- FW Executor
+print(identifyexecutor())
+-- paste hub / script here
+</div>
+    <div class="mock-actions">
+      <button class="btn" id="btnRun">Run F5</button>
+      <button class="btn ghost" id="btnExec">Execute</button>
+      <button class="btn ghost" id="btnClear">Clear</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);font-family:IBM Plex Mono,monospace;margin-top:4px" id="outLog">OUTPUT — ready</div>`,
+  files: `
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Scripts</div>
+    <div style="display:grid;gap:6px">
+      <div class="chip" style="justify-content:flex-start;cursor:pointer">untitled.lua</div>
+      <div class="chip" style="justify-content:flex-start;cursor:pointer">sUNC full</div>
+      <div class="chip" style="justify-content:flex-start;cursor:pointer">infinite yield</div>
+    </div>
+    <div class="mock-actions" style="margin-top:12px">
+      <button class="btn ghost">+ New</button>
+      <button class="btn ghost">Run All</button>
+    </div>`,
+  settings: `
+    <div style="display:grid;gap:10px;font-size:13px">
+      <div><span style="color:var(--muted)">Identity</span> · level 8</div>
+      <div><span style="color:var(--muted)">Theme</span> · Dark</div>
+      <div><span style="color:var(--muted)">UNC groups</span> · all on</div>
+      <div><span style="color:var(--muted)">Offsets</span> · auto</div>
+      <div class="mock-actions">
+        <button class="btn ghost" id="btnRefresh">Refresh offsets</button>
+      </div>
+    </div>`
+};
+
+function setMockTab(tab) {
+  document.querySelectorAll('#mockNav button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.getElementById('mockMain').innerHTML = mockPages[tab] || '';
+  wireMockActions(tab);
+}
+
+function wireMockActions(tab) {
+  if (tab === 'home') {
+    const btnA = document.getElementById('btnAttach');
+    const btnI = document.getElementById('btnInject');
+    const chipA = document.getElementById('chipAttach');
+    const chipB = document.getElementById('chipBridge');
+    const log = document.getElementById('homeLog');
+    const status = document.getElementById('mockStatus');
+    if (btnA) btnA.onclick = () => {
+      chipA.textContent = 'Attached';
+      chipA.className = 'chip ok';
+      btnI.disabled = false;
+      log.textContent = 'Roblox pid found · ready to inject';
+      status.textContent = 'Attached';
+    };
+    if (btnI) btnI.onclick = () => {
+      chipB.textContent = 'Bridge up';
+      chipB.className = 'chip ok';
+      log.textContent = 'Manual-map ok · Strategy A armed';
+      status.textContent = 'Injected';
+      btnI.disabled = true;
+    };
+  }
+  if (tab === 'editor') {
+    const out = document.getElementById('outLog');
+    const run = document.getElementById('btnRun');
+    const exec = document.getElementById('btnExec');
+    const clear = document.getElementById('btnClear');
+    if (run) run.onclick = () => { out.textContent = 'OUTPUT — FW | 1.0  ·  UNC bootstrap + script ok'; };
+    if (exec) exec.onclick = () => { out.textContent = 'OUTPUT — raw execute ok'; };
+    if (clear) clear.onclick = () => {
+      document.getElementById('editorBox').textContent = '-- cleared';
+      out.textContent = 'OUTPUT — cleared';
+    };
+  }
+  if (tab === 'settings') {
+    const r = document.getElementById('btnRefresh');
+    if (r) r.onclick = () => { r.textContent = 'Offsets refreshed'; setTimeout(() => r.textContent = 'Refresh offsets', 1200); };
+  }
+}
+
+document.querySelectorAll('#mockNav button').forEach(b => {
+  b.addEventListener('click', () => setMockTab(b.dataset.tab));
+});
+setMockTab('home');
+
+/* ── UNC groups ── */
+const uncGroups = {
+  Environment: {
+    desc: 'Core globals and environment helpers used by almost every hub.',
+    funcs: ['getgenv', 'getrenv', 'getgc', 'gethui', 'getreg', 'getfenv', 'setfenv']
+  },
+  Identity: {
+    desc: 'Thread identity control. Default level 8 for full script permissions.',
+    funcs: ['setthreadidentity', 'getidentity', 'setthreadcontext', 'getthreadidentity', 'setidentity']
+  },
+  Closures: {
+    desc: 'Hook and inspect functions. Required for advanced hubs and anti-tamper scripts.',
+    funcs: ['hookfunction', 'newcclosure', 'checkcaller', 'isexecutorclosure', 'clonefunction']
+  },
+  Metatable: {
+    desc: 'Raw metatable access and hooks.',
+    funcs: ['getrawmetatable', 'hookmetamethod', 'setreadonly', 'isreadonly']
+  },
+  Filesystem: {
+    desc: 'Sandbox workspace under %APPDATA%\\ShivExecutor\\workspace.',
+    funcs: ['readfile', 'writefile', 'appendfile', 'isfile', 'isfolder', 'makefolder', 'listfiles', 'delfile', 'delfolder', 'loadfile']
+  },
+  HTTP: {
+    desc: 'Full request surface via WinHTTP.',
+    funcs: ['request', 'http_request', 'httpget']
+  },
+  Encoding: {
+    desc: 'Base64 and related helpers.',
+    funcs: ['base64_encode', 'base64_decode']
+  },
+  Crypt: {
+    desc: 'Hash and encrypt helpers used by some loaders.',
+    funcs: ['crypt.encrypt', 'crypt.decrypt', 'crypt.hash', 'crypt.generatebytes']
+  },
+  Drawing: {
+    desc: '2D drawing library for overlays and ESP-style scripts.',
+    funcs: ['Drawing.new', 'cleardrawcache']
+  },
+  Instances: {
+    desc: 'Instance helpers and fire methods.',
+    funcs: ['cloneref', 'fireclickdetector', 'fireproximityprompt', 'getnilinstances']
+  },
+  Debug: {
+    desc: 'Debug library for introspection.',
+    funcs: ['debug.getinfo', 'debug.getupvalue', 'debug.getconstant', 'debug.setupvalue']
+  },
+  Signals: {
+    desc: 'Connection inspection and fire.',
+    funcs: ['getconnections', 'firesignal']
+  },
+  WebSocket: {
+    desc: 'WebSocket client for remote control / live hubs.',
+    funcs: ['WebSocket.connect']
+  },
+  Actors: {
+    desc: 'Parallel Luau actor helpers.',
+    funcs: ['getactors', 'run_on_actor']
+  },
+  Input: {
+    desc: 'Input state helpers.',
+    funcs: ['isrbxactive', 'mouse1click', 'mouse1press', 'keypress', 'keyrelease']
+  },
+  Misc: {
+    desc: 'Identity brand, clipboard, teleport queue, FPS.',
+    funcs: ['identifyexecutor → "FW"', 'setclipboard', 'queue_on_teleport', 'setfpscap']
+  }
+};
+
+const uncTabs = document.getElementById('uncTabs');
+const uncPanel = document.getElementById('uncPanel');
+Object.keys(uncGroups).forEach((name, i) => {
+  const btn = document.createElement('button');
+  btn.textContent = name;
+  if (i === 0) btn.classList.add('active');
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#uncTabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderUnc(name);
+  });
+  uncTabs.appendChild(btn);
+});
+function renderUnc(name) {
+  const g = uncGroups[name];
+  uncPanel.innerHTML = `
+    <h3>${name}</h3>
+    <p class="muted" style="margin:0 0 4px">${g.desc}</p>
+    <div class="unc-list">${g.funcs.map(f => `<code>${f}</code>`).join('')}</div>
+  `;
+}
+renderUnc(Object.keys(uncGroups)[0]);
+
+/* ── Themes (visual only) ── */
+const themeLabels = {
+  dark: 'Dark',
+  midnight: 'Midnight',
+  ocean: 'Ocean',
+  crimson: 'Crimson',
+  forest: 'Forest'
+};
+document.querySelectorAll('.theme-swatch').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('themeLabel').textContent = 'Active: ' + themeLabels[el.dataset.theme];
+  });
+});
+
+/* ── Pricing buttons ── */
+document.querySelectorAll('[data-plan]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const plan = btn.dataset.plan;
+    btn.textContent = 'Opening…';
+    setTimeout(() => {
+      btn.textContent = plan === 'week' ? 'Get Week' : plan === 'day' ? 'Get Day' : 'Get Month';
+      alert('Checkout for ' + plan + ' plan — wire this to your payment provider / Discord bot.');
+    }, 400);
+  });
+});
+
+/* ── Nav active on scroll ── */
+const sections = ['features', 'unc', 'pricing', 'faq'];
+const navLinks = document.querySelectorAll('nav a[href^="#"]');
+function updateNav() {
+  let current = '';
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && window.scrollY >= el.offsetTop - 120) current = id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+}
+window.addEventListener('scroll', updateNav);
+updateNav();
+</script>
+</body>
+</html>
