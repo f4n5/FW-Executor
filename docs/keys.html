@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>FW · Redeem key</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#07070b;--panel:#121218;--line:#2a2a36;--text:#ececf1;--muted:#9a9aaa;
+  --blue:#3b82f6;--green:#22c55e;--red:#ef4444;--radius:16px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Outfit,system-ui,sans-serif;background:var(--bg);color:var(--text);
+  background-image:radial-gradient(800px 400px at 70% -10%,rgba(59,130,246,.18),transparent 55%);
+  min-height:100vh;
+}
+a{color:var(--blue);text-decoration:none}
+.wrap{max-width:720px;margin:0 auto;padding:28px 20px 60px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.brand{font-weight:700;display:flex;gap:10px;align-items:center}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--blue);display:grid;place-items:center;font-size:12px;font-weight:700}
+h1{font-size:1.75rem;margin:0 0 8px}
+.sub{color:var(--muted);margin:0 0 24px;line-height:1.5}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:22px;margin-bottom:16px;
+}
+.card h2{font-size:1rem;margin:0 0 14px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+select,input{
+  width:100%;background:#181822;border:1px solid var(--line);border-radius:10px;
+  padding:12px 14px;color:var(--text);font:inherit;margin-bottom:12px;outline:none;
+}
+select:focus,input:focus{border-color:var(--blue)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:12px 18px;border-radius:999px;border:0;background:var(--blue);
+  color:#fff;font:inherit;font-weight:600;cursor:pointer;width:100%;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn.sm{width:auto;padding:8px 14px;font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.keybox{
+  font-family:"IBM Plex Mono",monospace;font-size:1.05rem;
+  background:#0c0c10;border:1px dashed var(--line);border-radius:12px;
+  padding:16px;word-break:break-all;margin:12px 0;letter-spacing:.04em;
+}
+.ok{color:var(--green)}.err{color:var(--red)}.muted{color:var(--muted)}
+.banner{
+  border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:14px;
+  border:1px solid var(--line);background:#121218;
+}
+.banner.success{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08)}
+.banner.warn{border-color:rgba(59,130,246,.35);background:rgba(59,130,246,.08)}
+.banner.err{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:10px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+.tag{font-size:11px;padding:2px 8px;border-radius:6px;background:#222;color:var(--muted)}
+.tag.day{color:#a5b4fc}.tag.week{color:#93c5fd}.tag.month{color:#86efac}
+.tag.used{color:var(--red)}.tag.open{color:var(--green)}
+.hidden{display:none}
+footer{margin-top:32px;color:var(--muted);font-size:12px;line-height:1.5}
+code{font-family:"IBM Plex Mono",monospace;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="logo">FW</div> Redeem</div>
+    <a href="fw.html">← Executor site</a>
+  </header>
+
+  <div id="banner" class="banner hidden"></div>
+
+  <h1>Redeem with receipt</h1>
+  <p class="sub">Enter the receipt code from your payment. A license key is created only when the receipt is valid and unused.</p>
+
+  <!-- Buyer redeem -->
+  <div class="card">
+    <h2>Receipt → key</h2>
+    <label>Receipt code</label>
+    <input id="receiptIn" placeholder="REC-...." autocomplete="off" />
+    <button class="btn" id="redeemBtn" type="button">Redeem</button>
+    <div id="result" class="hidden">
+      <p class="ok" style="margin:12px 0 0;font-size:14px">Key issued. Copy it into FW → Settings → Verify key.</p>
+      <div class="keybox" id="keyOut"></div>
+      <div class="row">
+        <button class="btn sm" id="copyBtn" type="button">Copy key</button>
+      </div>
+      <p class="muted" style="margin-top:10px;font-size:13px" id="hint"></p>
+    </div>
+    <p class="err" id="redeemErr" style="font-size:13px;margin-top:10px"></p>
+  </div>
+
+  <!-- Staff -->
+  <div class="card">
+    <h2>Staff</h2>
+    <p class="muted" style="font-size:13px;margin:0 0 10px">
+      After someone pays, create a <b>receipt</b> here and send them only the receipt code.
+      They redeem it above to get the key. Change the staff pin in the page source before going public.
+    </p>
+    <div id="staffLock">
+      <label>Staff pin</label>
+      <input id="pin" type="password" placeholder="pin" />
+      <button class="btn ghost" id="unlockBtn" type="button">Unlock</button>
+      <p class="err" id="pinErr" style="font-size:13px"></p>
+    </div>
+    <div id="staffPanel" class="hidden">
+      <label>Tier for new receipt</label>
+      <select id="tier">
+        <option value="day">Day — $3 / 24h</option>
+        <option value="week" selected>Week — $12 / 7d</option>
+        <option value="month">Month — $30 / 30d</option>
+      </select>
+      <label>Note (buyer / tx id)</label>
+      <input id="note" placeholder="paypal tx / discord name" />
+      <button class="btn" id="issueReceiptBtn" type="button">Create receipt</button>
+      <div id="receiptOutWrap" class="hidden">
+        <div class="keybox" id="receiptOut"></div>
+        <button class="btn sm" id="copyReceiptBtn" type="button">Copy receipt</button>
+      </div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:18px 0"/>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn sm ghost" id="exportBtn" type="button">Export JSON</button>
+        <button class="btn sm ghost" id="clearBtn" type="button">Clear all local data</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr><th>Receipt</th><th>Tier</th><th>Status</th><th>Key</th><th>Note</th></tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Receipts and keys live in <code>localStorage</code> on this browser (the staff machine that issues receipts).
+    Buyers only need the receipt code you send them — they do not need staff access.
+    For server HWID / expiry, use FWKeySite <code>/v1/verify</code> after you also register the issued key there.
+  </footer>
+</div>
+
+<script>
+/* ====== CONFIG ====== */
+const STAFF_PIN = 'fw-admin'; // change before publish
+const RECEIPTS_KEY = 'fw_receipts_v1';
+const KEYS_KEY = 'fw_issued_keys_v1';
+
+const TIERS = {
+  day:   { label: 'DAY' },
+  week:  { label: 'WEEK' },
+  month: { label: 'MONTH' },
+};
+
+/* ====== storage helpers ====== */
+function load(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch { return fallback; }
+}
+function save(key, val) {
+  localStorage.setItem(key, JSON.stringify(val));
+}
+
+function loadReceipts() { return load(RECEIPTS_KEY, []); }
+function saveReceipts(list) { save(RECEIPTS_KEY, list); }
+function loadKeys() { return load(KEYS_KEY, []); }
+function saveKeys(list) { save(KEYS_KEY, list); }
+
+/* ====== random ids ====== */
+function randChunk(n) {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const arr = new Uint8Array(n);
+  crypto.getRandomValues(arr);
+  let s = '';
+  for (let i = 0; i < n; i++) s += alphabet[arr[i] % alphabet.length];
+  return s;
+}
+
+function makeReceiptCode() {
+  return `REC-${randChunk(4)}-${randChunk(4)}-${randChunk(4)}`;
+}
+
+function makeLicenseKey(tier) {
+  const label = (TIERS[tier] || TIERS.week).label;
+  return `FW-${label}-${randChunk(4)}-${randChunk(4)}-${randChunk(4)}-${randChunk(4)}`;
+}
+
+/* ====== staff: create receipt (NO key yet) ====== */
+function createReceipt(tier, note) {
+  if (!TIERS[tier]) throw new Error('invalid tier');
+  const list = loadReceipts();
+  const entry = {
+    receipt: makeReceiptCode(),
+    tier,
+    note: note || '',
+    createdAt: Date.now(),
+    used: false,
+    usedAt: null,
+    key: null,
+  };
+  list.unshift(entry);
+  saveReceipts(list.slice(0, 500));
+  return entry;
+}
+
+/* ====== buyer: redeem receipt → key ====== */
+function redeemReceipt(code) {
+  const raw = String(code || '').trim().toUpperCase();
+  if (!raw) return { ok: false, message: 'enter a receipt code' };
+
+  const list = loadReceipts();
+  const i = list.findIndex(r => r.receipt.toUpperCase() === raw);
+  if (i < 0) return { ok: false, message: 'receipt not found' };
+  const rec = list[i];
+  if (rec.used) return { ok: false, message: 'receipt already used' };
+
+  const key = makeLicenseKey(rec.tier);
+  rec.used = true;
+  rec.usedAt = Date.now();
+  rec.key = key;
+  list[i] = rec;
+  saveReceipts(list);
+
+  const keys = loadKeys();
+  keys.unshift({
+    key,
+    tier: rec.tier,
+    receipt: rec.receipt,
+    note: rec.note,
+    createdAt: Date.now(),
+  });
+  saveKeys(keys.slice(0, 500));
+
+  return { ok: true, key, tier: rec.tier, receipt: rec.receipt };
+}
+
+/* ====== UI ====== */
+function showBanner(type, text) {
+  const b = document.getElementById('banner');
+  b.className = 'banner ' + type;
+  b.textContent = text;
+  b.classList.remove('hidden');
+}
+
+function showKey(key, tier) {
+  document.getElementById('result').classList.remove('hidden');
+  document.getElementById('keyOut').textContent = key;
+  document.getElementById('hint').textContent =
+    `Tier ${tier} · paste in FW Settings → Verify key. Timer starts on first redeem.`;
+  document.getElementById('redeemErr').textContent = '';
+}
+
+function renderTable() {
+  const tb = document.getElementById('tbody');
+  const list = loadReceipts();
+  tb.innerHTML = list.map(r => `
+    <tr>
+      <td><code>${r.receipt}</code></td>
+      <td><span class="tag ${r.tier}">${r.tier}</span></td>
+      <td><span class="tag ${r.used ? 'used' : 'open'}">${r.used ? 'used' : 'open'}</span></td>
+      <td>${r.key ? `<code>${r.key}</code>` : '—'}</td>
+      <td class="muted">${r.note || '—'}</td>
+    </tr>`).join('') || '<tr><td colspan="5" class="muted">No receipts yet</td></tr>';
+}
+
+/* redeem */
+document.getElementById('redeemBtn').onclick = () => {
+  const code = document.getElementById('receiptIn').value;
+  const res = redeemReceipt(code);
+  if (!res.ok) {
+    document.getElementById('redeemErr').textContent = res.message;
+    document.getElementById('result').classList.add('hidden');
+    return;
+  }
+  showKey(res.key, res.tier);
+  showBanner('success', 'Receipt accepted — key issued.');
+  // if staff panel open, refresh
+  if (!document.getElementById('staffPanel').classList.contains('hidden')) renderTable();
+};
+
+document.getElementById('copyBtn').onclick = async () => {
+  try { await navigator.clipboard.writeText(document.getElementById('keyOut').textContent); } catch {}
+};
+
+/* staff */
+document.getElementById('unlockBtn').onclick = () => {
+  if (document.getElementById('pin').value !== STAFF_PIN) {
+    document.getElementById('pinErr').textContent = 'wrong pin';
+    return;
+  }
+  document.getElementById('staffLock').classList.add('hidden');
+  document.getElementById('staffPanel').classList.remove('hidden');
+  renderTable();
+};
+
+document.getElementById('issueReceiptBtn').onclick = () => {
+  const tier = document.getElementById('tier').value;
+  const note = document.getElementById('note').value.trim();
+  const entry = createReceipt(tier, note);
+  document.getElementById('receiptOutWrap').classList.remove('hidden');
+  document.getElementById('receiptOut').textContent = entry.receipt;
+  renderTable();
+};
+
+document.getElementById('copyReceiptBtn').onclick = async () => {
+  try { await navigator.clipboard.writeText(document.getElementById('receiptOut').textContent); } catch {}
+};
+
+document.getElementById('exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify({ receipts: loadReceipts(), keys: loadKeys() }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fw-receipts.json';
+  a.click();
+};
+
+document.getElementById('clearBtn').onclick = () => {
+  if (confirm('Clear all receipts and keys on this browser?')) {
+    saveReceipts([]);
+    saveKeys([]);
+    renderTable();
+  }
+};
+
+/* optional: ?receipt=REC-... auto-fills and redeems once */
+(function boot() {
+  const p = new URLSearchParams(location.search);
+  const r = p.get('receipt');
+  if (r) {
+    document.getElementById('receiptIn').value = r;
+    // do not auto-redeem without click — user confirms
+    showBanner('warn', 'Receipt loaded — press Redeem to get your key.');
+  }
+})();
+</script>
+</body>
+</html>
+                                
