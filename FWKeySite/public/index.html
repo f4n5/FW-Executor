@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FW · Keys</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">FW <span>executor</span></div>
+      <nav class="nav">
+        <a href="#pricing">Pricing</a>
+        <a href="#status">Check key</a>
+        <a href="/admin">Admin</a>
+      </nav>
+    </header>
+
+    <h1>License keys</h1>
+    <p class="sub">Day · Week · Month. HWID locks on first redeem in the executor.</p>
+
+    <section id="pricing" class="grid">
+      <div class="card" id="card-day"></div>
+      <div class="card popular" id="card-week"></div>
+      <div class="card" id="card-month"></div>
+    </section>
+
+    <section id="status" class="panel">
+      <h2 style="margin-bottom:12px;font-size:1.15rem">Check key status</h2>
+      <label>Key</label>
+      <input id="statusKey" placeholder="FW-WEEK-...." />
+      <button class="btn primary" id="statusBtn" type="button">Check</button>
+      <p class="msg" id="statusMsg"></p>
+    </section>
+
+    <p class="footer">FW KeySite · paste key in the executor Settings → Verify</p>
+  </div>
+  <script>
+    async function loadTiers() {
+      const res = await fetch('/api/tiers');
+      const t = await res.json();
+      for (const id of ['day', 'week', 'month']) {
+        const tier = t[id];
+        const el = document.getElementById('card-' + id);
+        el.innerHTML = `
+          ${tier.popular ? '<div class="badge">POPULAR</div>' : ''}
+          <div class="tier-label">${tier.label}</div>
+          <div class="price">${tier.price}<small> / ${tier.duration}</small></div>
+          <ul class="features">${tier.features.map(f => `<li>${f}</li>`).join('')}</ul>
+          <button class="btn ${id==='week'?'primary':''}" type="button" disabled>${tier.button}</button>
+        `;
+      }
+    }
+    document.getElementById('statusBtn').onclick = async () => {
+      const key = document.getElementById('statusKey').value.trim();
+      const msg = document.getElementById('statusMsg');
+      msg.className = 'msg';
+      msg.textContent = '…';
+      const res = await fetch('/api/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        msg.className = 'msg err';
+        msg.textContent = data.message || data.code || 'not found';
+        return;
+      }
+      msg.className = 'msg ok';
+      const exp = data.expiresAt ? new Date(data.expiresAt).toLocaleString() : 'not redeemed yet';
+      msg.textContent = `${data.tier} · ${data.active ? 'active' : 'inactive'} · expires ${exp}`;
+    };
+    loadTiers();
+  </script>
+</body>
+</html>

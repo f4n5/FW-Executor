@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FW · Admin login</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="wrap" style="max-width:400px;padding-top:12vh">
+    <div class="brand" style="margin-bottom:24px">FW <span>admin</span></div>
+    <div class="panel">
+      <label>Password</label>
+      <input id="pw" type="password" placeholder="admin password" />
+      <button class="btn primary" id="go" type="button">Login</button>
+      <p class="msg" id="msg"></p>
+    </div>
+  </div>
+  <script>
+    document.getElementById('go').onclick = async () => {
+      const password = document.getElementById('pw').value;
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        document.getElementById('msg').className = 'msg err';
+        document.getElementById('msg').textContent = data.message || 'fail';
+        return;
+      }
+      location.href = '/admin';
+    };
+    document.getElementById('pw').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('go').click();
+    });
+  </script>
+</body>
+</html>

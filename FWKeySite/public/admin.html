@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FW · Admin</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">FW <span>admin</span></div>
+      <nav class="nav">
+        <a href="/">Site</a>
+        <a href="#" id="logout">Logout</a>
+      </nav>
+    </header>
+
+    <div class="panel">
+      <h2 style="margin-bottom:16px;font-size:1.15rem">Create key</h2>
+      <div class="row">
+        <div>
+          <label>Tier</label>
+          <select id="tier">
+            <option value="day">Day — $3 / 24h</option>
+            <option value="week" selected>Week — $12 / 7d</option>
+            <option value="month">Month — $30 / 30d</option>
+          </select>
+        </div>
+        <div>
+          <label>Buyer tag (optional)</label>
+          <input id="buyer" placeholder="discord name / email" />
+        </div>
+      </div>
+      <label>Note (payment id)</label>
+      <input id="note" placeholder="tx / order id" />
+      <button class="btn primary" id="create" type="button">Create key</button>
+      <div id="created" style="display:none">
+        <div class="key-box" id="newKey"></div>
+        <button class="btn" id="copy" type="button">Copy</button>
+      </div>
+      <p class="msg" id="createMsg"></p>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-bottom:16px;font-size:1.15rem">Keys</h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Key</th><th>Tier</th><th>Status</th><th>Expires</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script>
+    async function ensureAuth() {
+      const res = await fetch('/api/admin/me');
+      const data = await res.json();
+      if (!data.ok) location.href = '/admin/login';
+    }
+
+    async function loadKeys() {
+      const res = await fetch('/api/admin/keys');
+      if (res.status === 401) return location.href = '/admin/login';
+      const data = await res.json();
+      const tb = document.getElementById('tbody');
+      tb.innerHTML = '';
+      for (const k of data.keys || []) {
+        const tr = document.createElement('tr');
+        const now = Date.now();
+        let status = 'unused';
+        if (k.revoked) status = 'revoked';
+        else if (k.expiresAt && k.expiresAt < now) status = 'expired';
+        else if (k.redeemedAt) status = 'active';
+        tr.innerHTML = `
+          <td><code>${k.key}</code></td>
+          <td><span class="tag ${k.tier}">${k.tier}</span></td>
+          <td><span class="tag ${status==='revoked'||status==='expired'?'dead':''}">${status}</span></td>
+          <td>${k.expiresAt ? new Date(k.expiresAt).toLocaleString() : '—'}</td>
+          <td>
+            <button class="btn" style="width:auto;padding:6px 12px;font-size:0.8rem" data-act="reset" data-key="${k.key}">Reset HWID</button>
+            <button class="btn danger" style="width:auto;padding:6px 12px;font-size:0.8rem" data-act="revoke" data-key="${k.key}">Revoke</button>
+          </td>`;
+        tb.appendChild(tr);
+      }
+    }
+
+    document.getElementById('create').onclick = async () => {
+      const tier = document.getElementById('tier').value;
+      const note = document.getElementById('note').value;
+      const buyerTag = document.getElementById('buyer').value;
+      const res = await fetch('/api/admin/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier, note, buyerTag })
+      });
+      const data = await res.json();
+      const msg = document.getElementById('createMsg');
+      if (!data.ok) {
+        msg.className = 'msg err';
+        msg.textContent = data.message || 'fail';
+        return;
+      }
+      msg.className = 'msg ok';
+      msg.textContent = 'created';
+      document.getElementById('created').style.display = 'block';
+      document.getElementById('newKey').textContent = data.key;
+      loadKeys();
+    };
+
+    document.getElementById('copy').onclick = () => {
+      const t = document.getElementById('newKey').textContent;
+      navigator.clipboard.writeText(t);
+    };
+
+    document.getElementById('tbody').onclick = async (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const key = btn.dataset.key;
+      const act = btn.dataset.act;
+      const url = act === 'revoke' ? '/api/admin/revoke' : '/api/admin/reset';
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key })
+      });
+      loadKeys();
+    };
+
+    document.getElementById('logout').onclick = async (e) => {
+      e.preventDefault();
+      await fetch('/api/admin/logout', { method: 'POST' });
+      location.href = '/admin/login';
+    };
+
+    ensureAuth().then(loadKeys);
+  </script>
+</body>
+</html>
